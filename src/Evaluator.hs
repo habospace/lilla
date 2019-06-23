@@ -5,9 +5,10 @@
 module Evaluator where
 
 import Data.List hiding (insert, tail)
+import Control.Monad.Trans.State.Lazy
 import Control.Monad.Error
 import Control.Monad.Trans.Except
-import Control.Monad.Trans.State.Lazy
+import Data
 
 -- TODO: change this to some builtin Map type
 type LillaEnvironment = [(String, LillaVal)]
@@ -19,42 +20,6 @@ data ExecutionContext =
       Global
     | Function
     deriving (Eq, Show)
-
-data LillaVal = 
-      Null
-    | AtomicLilla String
-    | LillaList [LillaVal]
-    | NumericLilla Integer
-    | StringLilla String
-    | CharacterLilla Char
-    | BooleanLilla Bool
-    | LillaFunc {
-        params :: [String],
-        body   :: [LillaVal]
-    } deriving (Eq)
-
-showLillaVal :: LillaVal -> String
-showLillaVal (AtomicLilla x)    = "AtomicLilla " ++ x
-showLillaVal (LillaList xs)     = "LillaList [" ++  (intercalate ", " (showLillaVal <$> xs)) ++ "]"
-showLillaVal (NumericLilla x)   = "NumericLilla " ++ (show x)
-showLillaVal (StringLilla x)    = "StringLilla " ++ x
-showLillaVal (CharacterLilla x) = "CharacterLilla " ++ (show x)
-showLillaVal (BooleanLilla x)   = "BooleanLilla " ++ (show x)
-showLillaVal (LillaFunc params body) = "No string form of functions yet... sorry" 
-
-instance Show LillaVal where
-    show = showLillaVal
-
--- TODO: simplify this LillaError / remove unnecessary data constructors + change names
-data LillaError =
-      CustomLillaError
-    | NumArgsLillaError
-    | Default String
-    deriving (Eq, Show)
-
-instance Error LillaError where
-    noMsg = Default "An error has occurred."
-    strMsg = Default
 
 -- when new builtin Map type is introduced this will no longer be necessary
 insert :: (Eq a) => a -> b -> [(a, b)] -> [(a, b)]
