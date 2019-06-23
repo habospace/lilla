@@ -21,25 +21,24 @@ data LillaVal =
   } deriving (Eq)
 
 showLillaVal :: LillaVal -> String
+showLillaVal Null               = "Null"
 showLillaVal (AtomicLilla x)    = "AtomicLilla " ++ x
 showLillaVal (LillaList xs)     = "LillaList [" ++  (intercalate ", " (showLillaVal <$> xs)) ++ "]"
 showLillaVal (NumericLilla x)   = "NumericLilla " ++ (show x)
 showLillaVal (StringLilla x)    = "StringLilla " ++ x
 showLillaVal (CharacterLilla x) = "CharacterLilla " ++ (show x)
 showLillaVal (BooleanLilla x)   = "BooleanLilla " ++ (show x)
-showLillaVal (LillaFunc params body) = "No string form of functions yet... sorry" 
+showLillaVal (LillaFunc params body) = "No string form of functions yet..." 
 
 instance Show LillaVal where
   show = showLillaVal
 
--- TODO: simplify this LillaError / remove unnecessary data constructors + change names
 data LillaError =
-    ParseLillaError
-  | CustomLillaError
-  | NumArgsLillaError
-  | Default String
+    DefaultLillaError String
+  | ParseLillaError String
+  | RuntimeLillaError String
   deriving (Eq, Show)
 
 instance Error LillaError where
-  noMsg = Default "An error has occurred."
-  strMsg = Default
+  noMsg = DefaultLillaError "An error has occurred."
+  strMsg = DefaultLillaError
