@@ -101,9 +101,3 @@ makeEscapeCharParsers :: [(String, Char)] -> (Parser Char)
 makeEscapeCharParsers [] = error "empty"
 makeEscapeCharParsers ((str, c):tail) = 
     foldr (\(str', c') acc -> (makeEscapeCharParser str' c') <|> acc) (makeEscapeCharParser str c) tail
-
-
-
-
-
-
