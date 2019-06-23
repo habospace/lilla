@@ -8,10 +8,10 @@ import Data.List hiding (insert, tail)
 import Control.Monad.Trans.State.Lazy
 import Control.Monad.Error
 import Control.Monad.Trans.Except
+import qualified Data.Map as Map
 import Data
 
--- TODO: change this to some builtin Map type
-type LillaEnvironment = [(String, LillaVal)]
+type LillaEnvironment = Map.Map String LillaVal
 type LillaProgram = [LillaVal]
 type ThrowsLillaError = Either LillaError
 type LillaProgramExecution = StateT LillaEnvironment ThrowsLillaError LillaVal
@@ -21,23 +21,22 @@ data ExecutionContext =
     | Function
     deriving (Eq, Show)
 
--- when new builtin Map type is introduced this will no longer be necessary
-insert :: (Eq a) => a -> b -> [(a, b)] -> [(a, b)]
--- inserts a LillaVal mapped to a String ID into a LillaEnvironment
-insert k v [] = [(k, v)]
-insert k v ((k', v'):kvs) 
-    | k == k'   = (k', v): kvs
-    | otherwise = (k', v'): insert k v kvs  
-
 run :: LillaProgram -> ThrowsLillaError (LillaVal, LillaEnvironment)
 -- runs a LillaProgram with empty environment initialised 
-run lp = execute Global lp (return (Null, []))
+run lp = execute Global lp (return (Null, Map.empty))
 
 execute :: ExecutionContext -> LillaProgram -> ThrowsLillaError (LillaVal, LillaEnvironment) -> 
            ThrowsLillaError (LillaVal, LillaEnvironment)
 -- evaluates a LillaProgram expression by expression recursively
 execute _ [] inp = inp
+-- if next expression to evaluate in a Functional context is preceded by a return statement
+-- then return expression and ignore all the following expressions
 execute Function ((LillaList [AtomicLilla "return", expr]):_) inp = evaluate Function expr inp
+-- if return statement in Functional context is not directly followed by an expression then return Null
+execute Function ((LillaList [AtomicLilla "return"]):_) inp = evaluate Function Null inp
+-- if last expression in a Functional context is not preceded by return statement then return Null
+execute Function [_] inp = evaluate Function Null inp
+-- base case: evaluate program expression by expression recursively
 execute context (expr:exprs) inp = execute context exprs (evaluate context expr inp)
 
 evaluate :: ExecutionContext -> LillaVal -> ThrowsLillaError (LillaVal, LillaEnvironment) -> 
@@ -48,11 +47,6 @@ evaluate context exp (Right (_, env)) = case runStateT ((return exp) >>= (eval c
     Left err        -> throwError err
     Right result    -> Right result
 
-bindVars :: (Eq a) => [(a, b)] -> [(a, b)] -> [(a, b)]
--- chains together two environments and keeps left values in case of overlapping keysets
-bindVars [] env = env
-bindVars ((var, val):vs) env = bindVars vs (insert var val env)
-
 eval :: ExecutionContext -> LillaVal -> LillaProgramExecution
 -- evaluates a Lilla Expression
 eval _ Null = return Null
@@ -61,16 +55,16 @@ eval _ val@(StringLilla _) = return val
 eval _ val@(BooleanLilla _) = return val
 eval _ val@(AtomicLilla var) = do
     env <- get
-    case lookup var env of
-        Nothing  -> throwError $ Default $ "NameError: " ++ (show var) ++ " is not defined."
+    case Map.lookup var env of
+        Nothing  -> throwError $ RuntimeLillaError $ "NameError: " ++ (show var) ++ " is not defined."
         Just x   -> return x
 eval context (LillaList [AtomicLilla var, AtomicLilla "=", val]) = do
     x <- (eval context) val
-    modify (insert var x)
+    modify (Map.insert var x)
     return val
 eval context (LillaList [AtomicLilla "return", expr]) = case context of
     Function  -> (eval context) expr
-    Global    -> throwError $ Default "Cannot return in Global context." 
+    Global    -> throwError $ RuntimeLillaError "Cannot return in Global context." 
 
 eval context (LillaList [AtomicLilla "if", pred, LillaList conseqs, 
               AtomicLilla "else", LillaList alts]) = do
@@ -82,7 +76,7 @@ eval context (LillaList [AtomicLilla "if", pred, LillaList conseqs,
                 Right (val, env) -> do
                     put env
                     return val
-            x@_              -> throwError $ Default $ "TypeError: " ++ (show x) ++ " expecting Bool."
+            x@_              -> throwError $ RuntimeLillaError $ "TypeError: " ++ (show x) ++ " expecting Bool."
 
 eval context (LillaList [AtomicLilla "primitive", AtomicLilla func, args@(LillaList _)]) = do
     args' <- (eval context) args
@@ -103,27 +97,27 @@ eval context (LillaList xs) = do
         Left err -> throwError err
         Right ls -> return $ LillaList $ fst <$> ls
 
-eval _ _ = throwError $ Default "Bad special form." 
+eval _ _ = throwError $ RuntimeLillaError "Bad special form." 
 
 evaluateUserDefinedFunc ::  String -> LillaEnvironment -> LillaVal -> ThrowsLillaError LillaVal
-evaluateUserDefinedFunc func env (LillaList args) = case lookup func env of
-    Nothing -> throwError $ Default $ "NameError: " ++ func ++ " is not defined."
+evaluateUserDefinedFunc func env (LillaList args) = case Map.lookup func env of
+    Nothing -> throwError $ RuntimeLillaError $ "NameError: " ++ func ++ " is not defined."
     Just func'@(LillaFunc args' body) -> case (length args) == (length args') of
-        True -> case execute Function body (return (Null, bindVars env $ zip args' args)) of
+        True -> case execute Function body (return (Null,  Map.union (Map.fromList $ zip args' args) env)) of
             Right (val, _) -> return val
             Left err       -> throwError err
-        False -> throwError $ Default $ "TypeError: " ++ func ++ " is expecting " ++ (show $ length args') 
-    Just _                            -> throwError $ Default $ "TypeError: "  ++ func ++ " is not callable."
-    Nothing                           -> throwError $ Default $ "NameError: " ++ func ++ " is not defined."
-evaluateUserDefinedFunc _ _ _ = throwError $ Default "Bad special form." 
+        False -> throwError $ RuntimeLillaError $ "TypeError: " ++ func ++ " is expecting " ++ (show $ length args') 
+    Just _                            -> throwError $ RuntimeLillaError $ "TypeError: "  ++ func ++ " is not callable."
+    Nothing                           -> throwError $ RuntimeLillaError $ "NameError: " ++ func ++ " is not defined."
+evaluateUserDefinedFunc _ _ _ = throwError $ RuntimeLillaError "Bad special form." 
 
 evaluatePrimitiveFunc :: String -> LillaVal -> ThrowsLillaError LillaVal
 evaluatePrimitiveFunc func (LillaList args) = case lookup func primitives of
-    Nothing    -> throwError $ Default $ "NameError: " ++ func ++ " is not defined."
+    Nothing    -> throwError $ RuntimeLillaError $ "NameError: " ++ func ++ " is not defined."
     Just func' -> case func' args of
         Left  err -> throwError err
         Right val -> return val
-evaluatePrimitiveFunc _ _ = throwError $ Default "Bad special form." 
+evaluatePrimitiveFunc _ _ = throwError $ RuntimeLillaError "Bad special form." 
 
 primitives :: [(String, [LillaVal] -> ThrowsLillaError LillaVal)]
 primitives = [
@@ -157,38 +151,38 @@ primitives = [
 
 head' :: [LillaVal] -> ThrowsLillaError LillaVal
 head' [LillaList (x:_)] = return x
-head' [LillaList _] = throwError $ Default "Error: no head of empty list."
-head' (x:xs) = throwError $ Default "TypeError: head takes exactly 1 argument."
-head' _ = throwError $ Default "Bad special form."
+head' [LillaList _] = throwError $ RuntimeLillaError "Error: no head of empty list."
+head' (x:xs) = throwError $ RuntimeLillaError "TypeError: head takes exactly 1 argument."
+head' _ = throwError $ RuntimeLillaError "Bad special form."
 
 tail' :: [LillaVal] -> ThrowsLillaError LillaVal
 tail' [LillaList (_:xs)] = return $ LillaList xs
-tail' [LillaList _] = throwError $ Default "Error: no tail of empty list."
-tail' (x:xs) = throwError $ Default "TypeError: head takes exactly 1 argument."
-tail' _ = throwError $ Default "Bad special form."
+tail' [LillaList _] = throwError $ RuntimeLillaError "Error: no tail of empty list."
+tail' (x:xs) = throwError $ RuntimeLillaError "TypeError: head takes exactly 1 argument."
+tail' _ = throwError $ RuntimeLillaError "Bad special form."
 
 cons :: [LillaVal] -> ThrowsLillaError LillaVal
 cons [x, LillaList []] = return $ LillaList [x]
 cons [x, LillaList xs] = return $ LillaList (x:xs)
-cons [_, _] = throwError $ Default "TypeError: expecting List as 2nd argument."
-cons _ = throwError $ Default "TypeError: cons takes exactly 2 arguments."
+cons [_, _] = throwError $ RuntimeLillaError "TypeError: expecting List as 2nd argument."
+cons _ = throwError $ RuntimeLillaError "TypeError: cons takes exactly 2 arguments."
 
 conc :: [LillaVal] -> ThrowsLillaError LillaVal
 conc [LillaList xs, LillaList xs'] = return $ LillaList $ xs ++ xs'
-conc [_, _] = throwError $ Default "TypeError: concat takes exactly 2 arguments of type List."
-conc _ =throwError $ Default "TypeError: concat takes exactly 2 arguments."
+conc [_, _] = throwError $ RuntimeLillaError "TypeError: concat takes exactly 2 arguments of type List."
+conc _ =throwError $ RuntimeLillaError "TypeError: concat takes exactly 2 arguments."
 
 repl :: [LillaVal] -> ThrowsLillaError LillaVal
 repl [NumericLilla n, LillaList xs] = return $ LillaList $ concat $ replicate (fromIntegral n) xs
-repl [_, LillaList _] = throwError $ Default "TypeError: expecting Integer as 1st argument."
-repl [NumericLilla _, _] = throwError $ Default "TypeError: expecting List as 2nd argument."
-repl [_, _] = throwError $ Default "TypeError: expecting arguments of types Integer and List."
-repl _ = throwError $ Default "TypeError: repl takes exactly 2 arguments."
+repl [_, LillaList _] = throwError $ RuntimeLillaError "TypeError: expecting Integer as 1st argument."
+repl [NumericLilla _, _] = throwError $ RuntimeLillaError "TypeError: expecting List as 2nd argument."
+repl [_, _] = throwError $ RuntimeLillaError "TypeError: expecting arguments of types Integer and List."
+repl _ = throwError $ RuntimeLillaError "TypeError: repl takes exactly 2 arguments."
 
 boolBinop :: (LillaVal -> ThrowsLillaError a) -> (a -> a -> Bool) -> [LillaVal] -> ThrowsLillaError LillaVal
 boolBinop unpacker op args 
     | length args /= 2 = 
-        throwError $ Default $ "TypeError: function is expecting 2 args, currently has:"  ++ (show $ length args) ++ "."
+        throwError $ RuntimeLillaError $ "TypeError: function is expecting 2 args, currently has:"  ++ (show $ length args) ++ "."
     | otherwise        = do
         left <- unpacker $ args !! 0
         right <- unpacker $ args !! 1
@@ -200,16 +194,16 @@ boolBoolBinop = boolBinop unpackBool
 
 unpackStr :: LillaVal -> ThrowsLillaError String
 unpackStr (StringLilla s) = return s
-unpackStr notString = throwError $ Default "Typerror: expecting String." 
+unpackStr notString = throwError $ RuntimeLillaError "Typerror: expecting String." 
 
 unpackBool :: LillaVal -> ThrowsLillaError Bool
 unpackBool (BooleanLilla b) = return b
-unpackBool notBool = throwError $ Default "Typerror: expecting Bool."
+unpackBool notBool = throwError $ RuntimeLillaError "Typerror: expecting Bool."
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LillaVal] -> ThrowsLillaError LillaVal
-numericBinop op [_] = throwError $ Default "TypeError: expecting 2 arguments, got 1 instead."
+numericBinop op [_] = throwError $ RuntimeLillaError "TypeError: expecting 2 arguments, got 1 instead."
 numericBinop op params = mapM unpackNum params >>= return . NumericLilla . foldl1 op
 
 unpackNum :: LillaVal -> ThrowsLillaError Integer
 unpackNum (NumericLilla n) = return n
-unpackNum notNum = throwError $ Default "Typerror: expecting Integer."
+unpackNum notNum = throwError $ RuntimeLillaError "Typerror: expecting Integer."
