@@ -12,30 +12,55 @@ import Evaluator
 import Control.Monad
 
 
-parseFunc :: Parser LillaVal
-parseFunc = undefined
+parseIfElseExpr :: Int -> Parser LillaVal
+parseIfElseExpr indentation = do
+    if' <- ignore (char ' ') (makeStringParser "if")
+    ignore (char ' ') (char ':')
+    -- replicate (indentation + 4) " "
+    return Null
 
-parseExpr :: Int -> Parser LillaVal
-parseExpr indentation = parseExpression 
+parseFunc :: Int -> Parser LillaVal
+parseFunc indentation = do
+    makeStringParser "function"
+    name <- ignore (char ' ') word
+    ignore (char ' ') (char '(')
+    args <- sepBy (ignore (char ' ') word ) (char ',')
+    ignore (char ' ') (char ')')
+    ignore (char ' ') (char '\n')
+    return Null
+
+word :: Parser String
+word = do
+    first <- letter
+    rest <- many (letter <|> digit)
+    return $ [first] ++ rest
+
+
+parseExpr :: Parser LillaVal
+parseExpr = parseExpression 
     <|> parsePrimitive
-    <|> parseExpr indentation where
+    <|> parseExpr where
         parseExpression = do
-            x <- (try $ parseAssignment indentation) 
-                <|> (try $ parseFuncCall indentation) 
+            x <- (try $ parseAssignment ) 
+                <|> (try $ parseFuncCall ) 
                 <|> parseAtom
             return x
         parsePrimitive =  parseNumber
             <|> parseString
             <|> parseBool
 
+parseReturnStatement :: Parser LillaVal
+parseReturnStatement = do
+    makeStringParser "return"
+    expr <- ignore (char ' ') parseExpr
+    return $ LillaList [AtomicLilla "return", expr]
+
 parseNumber :: Parser LillaVal
 parseNumber = liftM (NumericLilla . read) $ many1 digit 
 
 parseAtom :: Parser LillaVal
 parseAtom = do
-    first <- letter
-    rest <- many (letter <|> digit)
-    let atom = [first] ++ rest
+    atom <- word
     return $ AtomicLilla atom
 
 parseBool :: Parser LillaVal
@@ -57,24 +82,22 @@ parseString = do
                 ("\\", '\\')
             ]
 
-parseFuncCall :: Int -> Parser LillaVal
-parseFuncCall indentation =  do
-    makeStringParser $ replicate indentation ' '
+parseFuncCall :: Parser LillaVal
+parseFuncCall =  do
     func <- ignore (char ' ') parseAtom
     ignore (char ' ') (char '(')
-    args <- sepBy (ignore (char ' ') (parseExpr 0)) (char ',')
+    args <- sepBy (ignore (char ' ') parseExpr ) (char ',')
     ignore (char ' ') (char ')')
     return $ if elem (unpack func) (fst <$> primitives)
         then LillaList [AtomicLilla "primitive", func, LillaList args]
         else LillaList [func, LillaList args] where
             unpack = (\(AtomicLilla x) -> x)
 
-parseAssignment :: Int -> Parser LillaVal
-parseAssignment indentation =  do
-    makeStringParser $ replicate indentation ' '
+parseAssignment :: Parser LillaVal
+parseAssignment =  do
     var <- parseAtom
     assignment <- ignore (char ' ') (makeStringParser "=")
-    expr <- ignore (char ' ') (parseExpr 0)
+    expr <- ignore (char ' ') parseExpr
     return $ LillaList [var, AtomicLilla assignment, expr]
    
 ignore :: Parser a -> Parser b -> Parser b
