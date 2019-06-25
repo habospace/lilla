@@ -27,7 +27,7 @@ run lp = execute Global lp (return (Null, Map.empty))
 
 execute :: ExecutionContext -> LillaProgram -> ThrowsLillaError (LillaVal, LillaEnvironment) -> 
            ThrowsLillaError (LillaVal, LillaEnvironment)
--- evaluates a LillaProgram expression by expression recursively
+-- if function gets empty lilla program return input
 execute _ [] inp = inp
 -- if next expression to evaluate in a Functional context is preceded by a return statement
 -- then return expression and ignore all the following expressions
