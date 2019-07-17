@@ -196,28 +196,3 @@ makeEscapeCharParsers :: [(String, Char)] -> (Parser Char)
 makeEscapeCharParsers [] = error "empty"
 makeEscapeCharParsers ((str, c):tail) = 
     foldr (\(str', c') acc -> (makeEscapeCharParser str' c') <|> acc) (makeEscapeCharParser str c) tail
-
-----------------------------
--- TESTS: ------------------
-----------------------------
-
-test1 :: String
-test1 = "\n    x = plus(5, 6)\n    r = minus(3, 4)\nz=mul(minus(5, 3), 7)\n" -- y = plus(plus(5, 7), 9)\nxs = replicate(5, \"kaka\", 8)\n"
-
-test2 :: String
-test2 = "    x = plus(5, \"redf\", replicate(5, 6, minus(10, 2)))\n"
-
-f :: String -> Either ParseError [LillaVal]
-f = parse (parseExprs 1) "x"
-
-g :: String -> Either ParseError LillaVal
-g = parse (parseExpr) "x"
-
---h :: Parser a -> String -> Either ParseError a
---h p s = parse p "x"
-
-test3 :: String
-test3 = "if gt(5, 6):\n    x = 10\n    y = plus(f, g)\n    z = plus(minus(4, 7), 8)\nelse:\n    v = mul(5, 6)\n    t = min(mul(5, 1), 8)\n"
-
-test4 :: String
-test4 = "    x = 10\n\n    y = plus(f, g)\n\n    z = plus(minus(4, 7), 8)\n\n    v = mul(5, 6)\n\n    t = min(mul(5, 1), 8)\n\n"
