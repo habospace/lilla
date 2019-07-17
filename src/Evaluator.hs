@@ -39,6 +39,9 @@ execute Function [_] inp = evaluate Function Null inp
 -- base case: evaluate program expression by expression recursively
 execute context (expr:exprs) inp = execute context exprs (evaluate context expr inp)
 
+
+-- TODO: change 3rd (last) arg of function from ThrowsLillaError (LillaVal, LillaEnvironment) 
+-- to ThrowsLillaError LillaEnvironment because nothing is using that LillaVal in the tuple
 evaluate :: ExecutionContext -> LillaVal -> ThrowsLillaError (LillaVal, LillaEnvironment) -> 
             ThrowsLillaError (LillaVal, LillaEnvironment)
 -- intermediary function to transfer environments between evaluation ticks
