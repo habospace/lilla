@@ -28,7 +28,8 @@ showLillaVal (NumericLilla x)   = "NumericLilla " ++ (show x)
 showLillaVal (StringLilla x)    = "StringLilla " ++ x
 showLillaVal (CharacterLilla x) = "CharacterLilla " ++ (show x)
 showLillaVal (BooleanLilla x)   = "BooleanLilla " ++ (show x)
-showLillaVal (LillaFunc params body) = "No string form of functions yet..." 
+showLillaVal (LillaFunc params body) = "\nLillaFunc.\nparams:\n" ++ (show params) ++ 
+                                       "\nbody:\n" ++ (show body) ++ "\n"
 
 instance Show LillaVal where
   show = showLillaVal

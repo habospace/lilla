@@ -7,7 +7,6 @@ import Data
 import Evaluator
 import Control.Monad
 
-
 -- Main Parser Function that parses sourcecode --
 -- into a sequence (LillaVal) expressions -------
 -------------------------------------------------
@@ -17,7 +16,7 @@ parseExprs n@indentation = do
                 (try $ parseFunc n) 
                 <|> (try $ parseIfElseBlock n) 
                 <|> (try $ parseExprInLine n)
-                <|> parseEmptyLine
+                <|> (try parseEmptyLine)
             )
     return exprs
 
@@ -35,9 +34,11 @@ parseFunc n@indent = do
     indentation n >> makeStringParser "function"
     name <- ignoreFirst (char ' ') word
     ignoreFirst (char ' ') (char '(')
-    args <- sepBy (ignoreFirst (char ' ') word) (char ',')
-    ignoreFirst (char ' ') (char ')')
+    args <- sepBy (ignoreFirst (char ' ') word) 
+                  (ignoreFirst (char ' ') (char ','))
+    ignoreFirst (char ' ') (char ')') >> colon
     ignoreFirst (char ' ') (char '\n')
+
     bodyExprs <- parseExprs $ n + 1
     return $ LillaFunc args bodyExprs
 
@@ -53,7 +54,6 @@ parseIfElseBlock n@indent = do
     return $ LillaList [AtomicLilla "if", predicate, 
         LillaList consExprs, AtomicLilla "else", 
         LillaList altExprs] where 
-        colon = ignoreFirst (char ' ') (char ':')
 
 -- parses a single Expression on a single line
 parseExprInLine :: Int -> Parser LillaVal
@@ -77,15 +77,18 @@ parseEmptyLine = do
 -- all the diffferent kinds of expressions ------
 -------------------------------------------------
 parseExpr :: Parser LillaVal
-parseExpr = p1 <|> p2 <|> parseEmpty <|> parseExpr where
-        p1 = (try parseAssignment) <|> (try parseFuncCall) 
-                                   <|> (try parseReturnStatement) 
-                                   <|> parseAtom
-        p2 = parseNumber <|> parseString 
-                         <|> parseBool
-        parseEmpty = do
-            makeStringParser ""
-            return Null
+parseExpr = (try parseAssignment)
+          <|> (try parseFuncCall) 
+        <|> (try parseReturnStatement) 
+        <|> (try parseNumber) 
+        <|> (try parseString) 
+        <|> (try parseBool)
+        <|> (try parseAtom)
+        <|> parseEmpty 
+        <|> parseExpr where 
+            parseEmpty = do
+                makeStringParser ""
+                return Null
 
 {- 
 Main expression parsers that parse all the 
@@ -161,7 +164,10 @@ parseReturnStatement = do
 --------------------
 
 indentation :: Int -> Parser String
-indentation n = (makeStringParser $ replicate (n * 4) ' ')
+indentation n = (makeStringParser $ replicate (n * 4) ' ') 
+            -- <|> (makeStringParser $ replicate n '\t')
+colon :: Parser Char
+colon = ignoreFirst (char ' ') (char ':')
 
 word :: Parser String
 word = do
