@@ -16,20 +16,21 @@ data LillaVal =
   | CharacterLilla Char
   | BooleanLilla Bool
   | LillaFunc {
+      name   :: String,
       params :: [String],
       body   :: [LillaVal]
   } deriving (Eq)
 
 showLillaVal :: LillaVal -> String
 showLillaVal Null               = "Null"
-showLillaVal (AtomicLilla x)    = "AtomicLilla " ++ x
-showLillaVal (LillaList xs)     = "LillaList [" ++  (intercalate ", " (showLillaVal <$> xs)) ++ "]"
-showLillaVal (NumericLilla x)   = "NumericLilla " ++ (show x)
-showLillaVal (StringLilla x)    = "StringLilla " ++ x
-showLillaVal (CharacterLilla x) = "CharacterLilla " ++ (show x)
-showLillaVal (BooleanLilla x)   = "BooleanLilla " ++ (show x)
-showLillaVal (LillaFunc params body) = "\nLillaFunc.\nparams:\n" ++ (show params) ++ 
-                                       "\nbody:\n" ++ (show body) ++ "\n"
+showLillaVal (AtomicLilla x)    = "Atom " ++ x
+showLillaVal (LillaList xs)     = show xs --"LillaList [" ++  (intercalate ", " (showLillaVal <$> xs)) ++ "]"
+showLillaVal (NumericLilla x)   = show x --"NumericLilla " ++ (show x)
+showLillaVal (StringLilla x)    = "\"" ++ x ++ "\"" --"StringLilla " ++ x
+showLillaVal (CharacterLilla x) = show x --"CharacterLilla " ++ (show x)
+showLillaVal (BooleanLilla x)   = show x --"BooleanLilla " ++ (show x)
+showLillaVal (LillaFunc name params body) = "\nLillaFunc: " ++ name ++ "\nparams:\n" ++ 
+                                            (show params) ++ "\nbody:\n" ++ (show body) ++ "\n"
 
 instance Show LillaVal where
   show = showLillaVal
@@ -43,3 +44,6 @@ data LillaError =
 instance Error LillaError where
   noMsg = DefaultLillaError "An error has occurred."
   strMsg = DefaultLillaError
+
+
+  
