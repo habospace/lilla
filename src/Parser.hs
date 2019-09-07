@@ -104,7 +104,7 @@ Expression types:
 
 -- parses a numeric value
 parseNumber :: Parser LillaVal
-parseNumber = liftM (NumericLilla . read) $ many1 digit 
+parseNumber = liftM (IntegerLilla . read) $ many1 digit 
 
 -- parses a boolean vaklue
 parseBool :: Parser LillaVal

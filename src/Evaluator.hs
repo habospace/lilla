@@ -44,9 +44,6 @@ execute Function [] inp = evaluate Function Null inp
 -- base case: evaluate program expression by expression recursively
 execute context (expr:exprs) inp = execute context exprs (evaluate context expr inp)
 
-
--- TODO: change 3rd (last) arg of function from ThrowsLillaError (LillaVal, LillaEnvironment) 
--- to ThrowsLillaError LillaEnvironment because nothing is using that LillaVal in the tuple
 evaluate :: ExecutionContext -> LillaVal -> ThrowsLillaError (LillaVal, LillaEnvironment) -> 
             ThrowsLillaError (LillaVal, LillaEnvironment)
 -- intermediary function to transfer environments between evaluation ticks
@@ -58,7 +55,7 @@ evaluate context exp (Right (_, env)) = case runStateT ((return exp) >>= (eval c
 eval :: ExecutionContext -> LillaVal -> LillaProgramExecution
 -- evaluates a Lilla Expression
 eval _ Null = return Null
-eval _ val@(NumericLilla _) = return val
+eval _ val@(IntegerLilla _) = return val
 eval _ val@(StringLilla _) = return val
 eval _ val@(BooleanLilla _) = return val
 eval _ val@(AtomicLilla var) = do
@@ -170,75 +167,75 @@ primitives = [
         ("min", min'),
         ("split", split),
         ("not", not')
-        --("join", join)
     ]
 
 not' :: [LillaVal] -> ThrowsLillaError LillaVal
--- TODO: add more customised error handling to Function
 not' [BooleanLilla x] = return . BooleanLilla . not $ x
-not' _ = throwError . RuntimeLillaError $ "no msg yet..." 
+not' [_] = throwError . RuntimeLillaError $ "ValueError: function `not` takes one Bool argument." 
+not' _ = throwError . RuntimeLillaError $ "ValueError: function `not` takes exactly one Bool argument." 
 
 split :: [LillaVal] -> ThrowsLillaError LillaVal
 split [StringLilla val, StringLilla splittingVal] = if length splittingVal > 1
-    then throwError $ RuntimeLillaError "no msg yet..." 
+    then throwError $ RuntimeLillaError "ValueError: split takes splitting string of length 1 character." 
     else return . LillaList $ (\x -> StringLilla x) <$> (split' val splittingVal) where
         split' [] _ = []
         split' word@(x:xs) s = if s == "" then (\c -> [c]) <$>  word else if [x] == s 
             then []
             else [wordUntilSplit] ++ (split' (snd $ splitAt (length wordUntilSplit) word) s) where
                 wordUntilSplit = takeWhile (\x' -> x' /= (s !! 0)) word
+split _ = throwError . RuntimeLillaError $ "TypeError: split takes exectly two String arguments."
 
 min' :: [LillaVal] -> ThrowsLillaError LillaVal
 min' [LillaList xs] = if boolAccumulator xs isNumeric
-    then return . NumericLilla $ minimum $ (\(NumericLilla x) -> x) <$> xs
+    then return . IntegerLilla $ minimum $ (\(IntegerLilla x) -> x) <$> xs
     else if boolAccumulator xs isBoolean
         then return . BooleanLilla $ minimum $ (\(BooleanLilla x) -> x) <$> xs
         else if boolAccumulator xs isString 
             then return . StringLilla $ minimum $ (\(StringLilla x) -> x) <$> xs
             else if boolAccumulator xs isCharacter
                 then return . CharacterLilla $ minimum $ (\(CharacterLilla x) -> x) <$> xs
-                else throwError . RuntimeLillaError $ "ValueError: no msg."
-min' _ = throwError . RuntimeLillaError $ "`TypeError: min takes exactly one list argument"
+                else throwError . RuntimeLillaError $ "ValueError: no msg..."
+min' _ = throwError . RuntimeLillaError $ "TypeError: min takes exactly one list argument"
 
 max' :: [LillaVal] -> ThrowsLillaError LillaVal
 max' [LillaList xs] = if boolAccumulator xs isNumeric
-    then return . NumericLilla $ maximum $ (\(NumericLilla x) -> x) <$> xs
+    then return . IntegerLilla $ maximum $ (\(IntegerLilla x) -> x) <$> xs
     else if boolAccumulator xs isBoolean
         then return . BooleanLilla $ maximum $ (\(BooleanLilla x) -> x) <$> xs
         else if boolAccumulator xs isString 
             then return . StringLilla $ maximum $ (\(StringLilla x) -> x) <$> xs
             else if boolAccumulator xs isCharacter
                 then return . CharacterLilla $ maximum $ (\(CharacterLilla x) -> x) <$> xs
-                else throwError . RuntimeLillaError $ "ValueError: no msg."
-max' _ = throwError . RuntimeLillaError $ "`TypeError: min takes exactly one list argument"
+                else throwError . RuntimeLillaError $ "ValueError: no msg..."
+max' _ = throwError . RuntimeLillaError $ "TypeError: min takes exactly one list argument"
     
 sum' :: [LillaVal] -> ThrowsLillaError LillaVal
 sum' [LillaList xs] = if allNumeric
-    then return . NumericLilla . sum $ (\(NumericLilla x) -> x) <$> xs
+    then return . IntegerLilla . sum $ (\(IntegerLilla x) -> x) <$> xs
     else throwError $ RuntimeLillaError "TypeError: expecting a list of Numbers."  where
         allNumeric = foldr (\x acc -> (isNumeric x) && acc) True xs
-        isNumeric (NumericLilla _) = True
+        isNumeric (IntegerLilla _) = True
         isNumeric _                = False 
-sum' [_]                           = throwError $ RuntimeLillaError "TypeError: expecting a list of Numbers."
-sum' _                             = throwError $ RuntimeLillaError "TypeError: sum takes exactly one list argument." 
+sum' [_] = throwError $ RuntimeLillaError "TypeError: expecting a list of Numbers."
+sum' _ = throwError $ RuntimeLillaError "TypeError: sum takes exactly one list argument." 
 
 generateList :: [LillaVal] -> ThrowsLillaError LillaVal
-generateList [NumericLilla min, NumericLilla max] = return . LillaList $ (\x -> NumericLilla x) <$> [min .. max]
-generateList [NumericLilla min, _] = throwError $ RuntimeLillaError "TypeError: expecting a Number as 2nd argument."
-generateList [_, NumericLilla max] = throwError $ RuntimeLillaError "TypeError: expecting a Number as 1st argument."
-generateList [_, _]                = throwError $ RuntimeLillaError "TypeError: expecting Numbers as arguments"
-generateList _                     = throwError $ RuntimeLillaError "TypeError: `generateList` takes exactly 2 arguments."
+generateList [IntegerLilla min, IntegerLilla max] = return . LillaList $ (\x -> IntegerLilla x) <$> [min .. max]
+generateList [IntegerLilla min, _] = throwError $ RuntimeLillaError "TypeError: expecting a Number as 2nd argument."
+generateList [_, IntegerLilla max] = throwError $ RuntimeLillaError "TypeError: expecting a Number as 1st argument."
+generateList [_, _] = throwError $ RuntimeLillaError "TypeError: expecting Numbers as arguments"
+generateList _ = throwError $ RuntimeLillaError "TypeError: `generateList` takes exactly 2 arguments."
 
 take' :: [LillaVal] -> ThrowsLillaError LillaVal
-take' [NumericLilla n, LillaList xs] = return . LillaList $ take (fromIntegral n) xs
-take' [NumericLilla n, _] = throwError $ RuntimeLillaError "TypeError: expecting a List as 2nd argument."
+take' [IntegerLilla n, LillaList xs] = return . LillaList $ take (fromIntegral n) xs
+take' [IntegerLilla n, _] = throwError $ RuntimeLillaError "TypeError: expecting a List as 2nd argument."
 take' [_, LillaList xs]   = throwError $ RuntimeLillaError "TypeError: expecting a Number as 1st argument."
-take' [_, _]              = throwError $ RuntimeLillaError "TypeError: expecting Number and List arguments."
-take' _                   = throwError $ RuntimeLillaError "TypeError: `take` takes exactly 2 arguments."
+take' [_, _] = throwError $ RuntimeLillaError "TypeError: expecting Number and List arguments."
+take' _ = throwError $ RuntimeLillaError "TypeError: `take` takes exactly 2 arguments."
 
 toNumber :: [LillaVal] -> ThrowsLillaError LillaVal
 toNumber [StringLilla val] = if numericString
-    then return . NumericLilla . (\x -> read x :: Integer) $ val
+    then return . IntegerLilla . (\x -> read x :: Integer) $ val
     else throwError $ RuntimeLillaError "ValueError: toNumber takes only numeric strings" where 
         numericString = foldr (\c acc -> (c `elem` ['0' .. '9']) && acc) True val
 toNumber [_] = throwError $ RuntimeLillaError "TypeError: toNumber takes argument of type string."
@@ -249,7 +246,7 @@ toString [x] = return $ StringLilla . show $ x
 toString (x:xs) = throwError $ RuntimeLillaError "TypeError: toString takes exactly 1 argument."
 
 length' :: [LillaVal] -> ThrowsLillaError LillaVal
-length' [LillaList xs] = return $ NumericLilla . fromIntegral . length $ xs
+length' [LillaList xs] = return $ IntegerLilla . fromIntegral . length $ xs
 length' val = throwError $ RuntimeLillaError $ "TypeError: length takes lists. Got " ++ (show val) ++ " instead."
 
 head' :: [LillaVal] -> ThrowsLillaError LillaVal
@@ -276,9 +273,9 @@ conc [_, _] = throwError $ RuntimeLillaError "TypeError: concat takes exactly 2 
 conc _ =throwError $ RuntimeLillaError "TypeError: concat takes exactly 2 arguments."
 
 repl :: [LillaVal] -> ThrowsLillaError LillaVal
-repl [NumericLilla n, LillaList xs] = return $ LillaList $ concat $ replicate (fromIntegral n) xs
+repl [IntegerLilla n, LillaList xs] = return $ LillaList $ concat $ replicate (fromIntegral n) xs
 repl [_, LillaList _] = throwError $ RuntimeLillaError "TypeError: expecting Integer as 1st argument."
-repl [NumericLilla _, _] = throwError $ RuntimeLillaError "TypeError: expecting List as 2nd argument."
+repl [IntegerLilla _, _] = throwError $ RuntimeLillaError "TypeError: expecting List as 2nd argument."
 repl [_, _] = throwError $ RuntimeLillaError "TypeError: expecting arguments of types Integer and List."
 repl _ = throwError $ RuntimeLillaError "TypeError: repl takes exactly 2 arguments."
 
@@ -305,27 +302,27 @@ unpackBool notBool = throwError $ RuntimeLillaError "Typerror: expecting Bool."
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LillaVal] -> ThrowsLillaError LillaVal
 numericBinop op [_] = throwError $ RuntimeLillaError "TypeError: expecting 2 arguments, got 1 instead."
-numericBinop op params = mapM unpackNum params >>= return . NumericLilla . foldl1 op
+numericBinop op params = mapM unpackNum params >>= return . IntegerLilla . foldl1 op
 
 unpackNum :: LillaVal -> ThrowsLillaError Integer
-unpackNum (NumericLilla n) = return n
+unpackNum (IntegerLilla n) = return n
 unpackNum _ = throwError $ RuntimeLillaError "Typerror: expecting Integer."
 
 isNumeric :: LillaVal -> Bool
-isNumeric (NumericLilla _) = True
-isNumeric _              = False
+isNumeric (IntegerLilla _) = True
+isNumeric _ = False
 
 isBoolean :: LillaVal -> Bool
 isBoolean (BooleanLilla _) = True
-isBoolean _              = False
+isBoolean _ = False
 
 isString :: LillaVal -> Bool
 isString (StringLilla _) = True
-isString _             = False
+isString _ = False
 
 isCharacter :: LillaVal -> Bool
 isCharacter (CharacterLilla _) = True
-isCharacter _                = False
+isCharacter _ = False
 
 boolAccumulator :: [LillaVal] -> (LillaVal -> Bool) -> Bool
 boolAccumulator xs' f = foldr (\x' acc' -> x' && acc') True $ f <$> xs'

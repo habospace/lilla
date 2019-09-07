@@ -50,4 +50,3 @@ digitSum = sum(digits(x))
 nFactorDigitSum = sum(allDigits(primeFactors(x)))
 
 smiths = allSmithsBelow(100)
-
