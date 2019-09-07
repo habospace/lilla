@@ -1,0 +1,53 @@
+
+function factors(n):
+    function filterFunc(x):
+        return eqv(mod(n, x), 0)
+    return take(1, filter(filterFunc, generateList(2, minus(n, 1))))
+
+function primeFactors(n):
+    if eqv(n, 1):
+        return []
+    else:
+        facs = factors(n)
+        if eqv(length(facs), 0):
+            return [n]
+        else:
+            return concat(facs, primeFactors(div(n, head(facs))))
+
+function isPrime(x):
+    return and(gte(1, length(primeFactors(x))), ne(x, 1))
+
+function digits(x):
+    function convertToNumber(x):
+        return toNumber(x)
+    return map(convertToNumber, split(toString(x), ""))
+
+function allDigits(xs):
+    if eqv(length(xs), 0):
+        return []
+    else:
+        xsHead = head(xs)
+        xsTail = tail(xs)
+        return concat(digits(xsHead), allDigits(xsTail))
+
+function isSmith(x):
+    isNPrime = isPrime(x)
+    digitSum = sum(digits(x))
+    nFactorDigitSum = sum(allDigits(primeFactors(x)))
+    return and(not(isNPrime), eqv(digitSum, nFactorDigitSum))
+
+function allSmithsBelow(x):
+    if lte(x, 0):
+        return []
+    else:
+        return filter(isSmith, generateList(0, x))
+
+x = 22
+
+facts = primeFactors(x)
+isNPrime = isPrime(x)
+digitSum = sum(digits(x))
+nFactorDigitSum = sum(allDigits(primeFactors(x)))
+
+smiths = allSmithsBelow(100)
+
