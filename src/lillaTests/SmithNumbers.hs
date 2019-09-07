@@ -20,7 +20,7 @@ all_digits []     = []
 all_digits (x:xs) = digits x ++ all_digits xs
 
 is_smith :: Int -> Bool
-is_smith = not is_n_prime && n_digit_sum == n_factor_digit_sum = True where 
+is_smith n = not is_n_prime && n_digit_sum == n_factor_digit_sum where 
     is_n_prime = is_prime n
     n_digit_sum = (sum . digits) n
     n_factor_digit_sum = (sum . all_digits . prime_factors) n
