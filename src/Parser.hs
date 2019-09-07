@@ -40,7 +40,7 @@ parseFunc n@indent = do
     ignoreFirst (char ' ') (char '\n')
 
     bodyExprs <- parseExprs $ n + 1
-    return $ LillaFunc args bodyExprs
+    return $ LillaFunc name args bodyExprs
 
 -- parses if-else code block
 parseIfElseBlock :: Int -> Parser LillaVal
@@ -78,8 +78,9 @@ parseEmptyLine = do
 -------------------------------------------------
 parseExpr :: Parser LillaVal
 parseExpr = (try parseAssignment)
-          <|> (try parseFuncCall) 
-        <|> (try parseReturnStatement) 
+        <|> (try parseFuncCall)
+        <|> (try parseReturnStatement)
+        <|> (try parseLillaList) 
         <|> (try parseNumber) 
         <|> (try parseString) 
         <|> (try parseBool)
@@ -149,8 +150,19 @@ parseFuncCall =  do
     ignoreFirst (char ' ') (char ')')
     return $ if elem (unpack func) (fst <$> primitives)
         then LillaList [AtomicLilla "primitive", func, LillaList args]
-        else LillaList [func, LillaList args] where
+        else LillaList [AtomicLilla "defined", func, LillaList args] where
             unpack = (\(AtomicLilla x) -> x)
+
+-- parses a List 
+parseLillaList :: Parser LillaVal
+parseLillaList = do
+    ignoreFirst (char ' ') (char '[')
+    exprs <- sepBy (ignoreFirst (char ' ') parseExpr) (char ',')
+    ignoreFirst (char ' ') (char ']')
+    return . LillaList $ filter f exprs where
+        f Null = False
+        f _    = True
+
 
 -- parses return statement
 parseReturnStatement :: Parser LillaVal
@@ -171,8 +183,8 @@ colon = ignoreFirst (char ' ') (char ':')
 
 word :: Parser String
 word = do
-    first <- letter
-    rest <- many (letter <|> digit)
+    first <- letter <|> (char '_')
+    rest <- many (letter <|> digit <|> (char '_'))
     return $ [first] ++ rest
 
 ignoreFirst :: Parser a -> Parser b -> Parser b
@@ -202,3 +214,4 @@ makeEscapeCharParsers :: [(String, Char)] -> (Parser Char)
 makeEscapeCharParsers [] = error "empty"
 makeEscapeCharParsers ((str, c):tail) = 
     foldr (\(str', c') acc -> (makeEscapeCharParser str' c') <|> acc) (makeEscapeCharParser str c) tail
+
