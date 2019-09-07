@@ -5,19 +5,18 @@ import Parser
 import Data
 import Text.ParserCombinators.Parsec 
 
-
 main :: IO ()
 main = undefined
+
+getFileContent :: String -> IO String
+getFileContent path = do
+    content <- getFileContent path
+    return content
 
 printFileContent :: String -> IO ()
 printFileContent path = do
     content <- readFile path
     putStr content
-
-readfile :: String -> IO String
-readfile path = do
-    content <- readFile path
-    return content
 
 readLillaProgram :: String -> IO (Either ParseError LillaProgram)
 readLillaProgram path = do
@@ -27,7 +26,6 @@ readLillaProgram path = do
 printLillaProgram :: String -> IO ()
 printLillaProgram path = readLillaProgram path >>= putStr . show 
 
-
 runParserOnScript :: String -> (String -> (Either ParseError LillaVal)) ->
      IO (Either ParseError LillaVal)
 runParserOnScript path f = do
@@ -35,11 +33,18 @@ runParserOnScript path f = do
     putStr content
     return $ f content
 
-g = parse (parseIfElseBlock 0) "x"
-x = runParserOnScript "lillaprogram.txt" g
+trapError :: ThrowsLillaError (LillaVal, LillaEnvironment) -> String
+trapError (Left err) = show err
+trapError (Right (_, env)) = showLillaEnvironment env 
 
-h = parse (parseFunc 0) "x"
-y = runParserOnScript "testlillaparser.txt" h
-
-i = parse (parseExprs 0) "x"
-z = printLillaProgram "lillaprogram.txt"
+runLillaProgram :: String -> IO ()
+runLillaProgram path = do
+    standards <- readLillaProgram "standards/standards.li"
+    lillaProgram <- readLillaProgram path
+    output <- return $ trapError $ (convertError (chain standards lillaProgram)) >>= run
+    putStr output where
+        convertError (Left err) = Left . ParseLillaError . show $ err
+        convertError (Right val) = return val
+        chain (Right p1) (Right p2) = Right $ p1 ++ p2
+        chain (Left err) _ = Left err
+        chain _ (Left err) = Left err
