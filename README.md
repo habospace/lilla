@@ -22,11 +22,12 @@ The repository has the following structure:
 that finds all smith numbers that are smaller than a given 'n' (see what 
 smith numbers are here https://en.wikipedia.org/wiki/Smith_number). It is a 
 ground truth reference to check if the lilla implementation of the same
-task is executed correctly.
+task is executed correctly by the Evaluator.
 
 **(2.)** The **src/lillaTests/SmithNumbers.li** This is the 
 **src/lillaTests/SmithNumbers.hs** code implemented in Lilla. It was made to 
-test if the code is running correctly.
+test if the Lilla implementation of a program that finds all smith numbers below a
+given 'n' is executed correctly by the Evaluator. 
 
 **(3.)** The **src/standards/standards.li** This module contains 
 some standard functions of the Lilla programming language such as:
@@ -70,13 +71,16 @@ function fold(fAcc, acc, xs):
         return fAcc(xsHead, fold(fAcc, acc, xsTail))
 ```
 
-**(4.)** The **src/Data.hs** module contains definition of Lilla value and Lilla 
-error types which are the Haskell representations of the Lilla programming language.
-This is what the parser translates the Lilla sourcecode to.
+**(4.)** The **src/Data.hs** module contains the definitions of Lilla value and Lilla 
+error types which are the building blocks of the Haskell representation of a 
+Lilla program. The parser module translates a lilla program source code string
+into a list of Lilla values. The lilla error types are used during the evaluation
+of the lilla program. 
 
 **(5.)** The **src/Evaluator.hs** module contains the definition of how the Haskell 
 representation of a Lilla program (which is a list of Lilla values **[LillaVal]**) 
-is evaluated & executed.
+is evaluated & executed. The evaluator module models the Lilla program execution
+with the State Monad Transformer.
 
 **(6.)** The **src/Main.hs** module contains the **runLillaProgram** function (and all
 of its component functions) that essentially takes a path to a Lilla source file
@@ -84,5 +88,5 @@ reads all the standard functions defined for the Lilla language into the memory
 (see: **src/standards/standards.li**) and executes the Lilla program.
 
 **(7.)** The **src/Parser.hs** module contains the parser that translates a text file
-representing a lilla program into the in Haskell representation of the Lilla program
-so basically it translates a String into an list of Lilla values **(String -> [LillaVal])**.
+representing a lilla program into the Haskell representation of the Lilla program
+so basically it translates a String into a list of Lilla values **(String -> [LillaVal])**.
