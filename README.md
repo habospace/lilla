@@ -7,15 +7,15 @@ The repository has the following structure:
 
 ```
 |src/
-    L lillaTests/
-        L SmithNumbers.hs (1.)
-        L SmithNumbers.li (2.)
-    L standards/
-        L standards.li    (3.)
-    L Data.hs             (4.)
-    L Evaluator.hs        (5.)
-    L Main.hs             (6.)
-    L Parser.hs           (7.)
+    ├ lillaTests/
+    |   ├ SmithNumbers.hs (1.)
+    │   ⌊ SmithNumbers.li (2.)
+    ├ standards/
+    │   ⌊ standards.li    (3.)
+    ├ Data.hs             (4.)
+    ├ Evaluator.hs        (5.)
+    ├ Main.hs             (6.)
+    └ Parser.hs           (7.)
 ```
 
 **(1.)** The **src/lillaTests/SmithNumbers.hs** This is a Haskell code
@@ -30,39 +30,45 @@ test if the code is running correctly.
 
 **(3.)** The **src/standards/standards.li** This module contains 
 some standard functions of the Lilla programming language such as:
-    - filter
-        ```
-        function filter(f, xs):
-            if eqv(length(xs), 0):
-                return xs
-            else:
-                xsHead = head(xs)
-                xsTail = tail(xs)
-                if f(xsHead):
-                    return cons(xsHead, filter(f, xsTail))
-                else:
-                    return filter(f, xsTail)
-        ```
-    - map
-        ```
-        function map(fxy, xs):
-            if eqv(length(xs), 0):
-                return xs
-            else:
-                xsHead = head(xs)
-                xsTail = tail(xs)
-                return cons(fxy(xsHead), map(fxy, xsTail))
-        ```
-    - fold
-        ```
-        function fold(fAcc, acc, xs):
-            if eqv(length(xs), 0):
-                return acc
-            else:
-                xsHead = head(xs)
-                xsTail = tail(xs)
-                return fAcc(xsHead, fold(fAcc, acc, xsTail))
-        ```
+
+**(3.1)** filter:
+
+```
+function filter(f, xs):
+    if eqv(length(xs), 0):
+        return xs
+    else:
+        xsHead = head(xs)
+        xsTail = tail(xs)
+        if f(xsHead):
+            return cons(xsHead, filter(f, xsTail))
+        else:
+            return filter(f, xsTail)
+```
+
+**(3.2)** map:
+
+```
+function map(fxy, xs):
+    if eqv(length(xs), 0):
+        return xs
+    else:
+        xsHead = head(xs)
+        xsTail = tail(xs)
+        return cons(fxy(xsHead), map(fxy, xsTail))
+```
+
+**(3.3)** fold:
+
+```
+function fold(fAcc, acc, xs):
+    if eqv(length(xs), 0):
+        return acc
+    else:
+        xsHead = head(xs)
+        xsTail = tail(xs)
+        return fAcc(xsHead, fold(fAcc, acc, xsTail))
+```
 
 **(4.)** The **src/Data.hs** module contains definition of Lilla value and Lilla 
 error types which are the Haskell representations of the Lilla programming language.
