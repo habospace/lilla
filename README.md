@@ -29,7 +29,7 @@ task is executed correctly by the Evaluator.
 test if the Lilla implementation of a program that finds all smith numbers below a
 given 'n' is executed correctly by the Evaluator. 
 
-**(3.)** The [src/standards/standards.li](https://github.com/habospace/Lilla/tree/master/src/standards) This module contains 
+**(3.)** The [src/standards/standards.li](https://github.com/habospace/Lilla/blob/master/src/standards/standards.li) This module contains 
 some standard functions of the Lilla programming language such as:
 
 **(3.1)** filter:
