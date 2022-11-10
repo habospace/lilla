@@ -87,5 +87,5 @@ reads all the standard functions defined for the Lilla language into the memory
 **(7.)** The [src/Parser.hs](https://github.com/habospace/Lilla/blob/master/src/Parser.hs) module contains the parser that translates a text file
 representing a lilla program into the Haskell representation of the Lilla program
 so basically it translates a String into a list of Lilla values **(String -> [LillaVal])**. 
-The parser is implemented based on the paper "MOnadic Parser COmbinators" by Graham Hutton 
+The parser is implemented based on the paper "Monadic Parser Combinators" by Graham Hutton 
 (see: https://www.cs.nott.ac.uk/~pszgmh/monparsing.pdf). 
