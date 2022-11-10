@@ -71,16 +71,13 @@ function fold(fAcc, acc, xs):
         return fAcc(xsHead, fold(fAcc, acc, xsTail))
 ```
 
-**(4.)** The [src/Data.hs](https://github.com/habospace/Lilla/blob/master/src/Data.hs) module contains the definitions of Lilla value and Lilla 
+**(4.)** The [src/Data.hs](https://github.com/habospace/Lilla/blob/master/src/Data.hs) module contains the definitions of Lilla values and Lilla 
 error types which are the building blocks of the Haskell representation of a 
-Lilla program. The parser module translates a lilla program source code string
-into a list of Lilla values. The lilla error types are used during the evaluation
-of the lilla program. 
+Lilla program. The lilla error types are used during the evaluation and the 
+evaluation of the lilla program (ParseLillaError & RuntimeLillaError). 
 
-**(5.)** The [src/Evaluator.hs](https://github.com/habospace/Lilla/blob/master/src/Evaluator.hs) module contains the definition of how the Haskell 
-representation of a Lilla program (which is a list of Lilla values **[LillaVal]**) 
-is evaluated & executed. The evaluator module models the Lilla program execution
-with the State Monad Transformer.
+**(5.)** The [src/Evaluator.hs](https://github.com/habospace/Lilla/blob/master/src/Evaluator.hs) module contains the sourcecode of the Lilla program evaluation. For representing the iterative/step by step execution of the Lilla 
+program the Evaluator module is using the State Monad Transformer extensively.
 
 **(6.)** The [src/Main.hs](https://github.com/habospace/Lilla/blob/master/src/Main.hs) module contains the **runLillaProgram** function (and all
 of its component functions) that essentially takes a path to a Lilla source file
@@ -89,4 +86,6 @@ reads all the standard functions defined for the Lilla language into the memory
 
 **(7.)** The [src/Parser.hs](https://github.com/habospace/Lilla/blob/master/src/Parser.hs) module contains the parser that translates a text file
 representing a lilla program into the Haskell representation of the Lilla program
-so basically it translates a String into a list of Lilla values **(String -> [LillaVal])**.
+so basically it translates a String into a list of Lilla values **(String -> [LillaVal])**. 
+The parser is implemented based on the paper "MOnadic Parser COmbinators" by Graham Hutton 
+(see: https://www.cs.nott.ac.uk/~pszgmh/monparsing.pdf). 
