@@ -1,4 +1,4 @@
-# Lilla
+# lilla
 
 Lilla is a programming language written in Haskell. 
 It is a functional language that has a Pythonic syntax.
