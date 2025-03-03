@@ -4,9 +4,9 @@ Lilla is a programming language written in Haskell.
 It is a functional language that has a Pythonic syntax.
 The language doesn't have loops, only recursion.
 
-The [src/lillaTests/SmithNumbers.li](https://github.com/habospace/Lilla/blob/master/src/lillaTests/SmithNumbers.li) script is written in Lilla and is findin all thr smith numbers below n. 
+The [src/lillaTests/SmithNumbers.li](https://github.com/habospace/Lilla/blob/master/src/lillaTests/SmithNumbers.li) script is written in Lilla and is finding all the [smith numbers](https://en.wikipedia.org/wiki/Smith_number) below n. 
 
-The [src/standards/standards.li](https://github.com/habospace/Lilla/blob/master/src/standards/standards.li) This module contains 
+The [src/standards/standards.li](https://github.com/habospace/Lilla/blob/master/src/standards/standards.li) module contains 
 some standard functions of the Lilla programming language such as:
 
 **(1)** filter:
