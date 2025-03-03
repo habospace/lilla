@@ -4,9 +4,8 @@ Lilla is a programming language written in Haskell.
 It is a functional language that has a Pythonic syntax.
 The language doesn't have loops, only recursion.
 
-The project was inspired by Graham Hutton's paper on monadic parser combinators in haskell:
- - https://www.cs.nott.ac.uk/~pszgmh/monparsing.pdf
-and also by a book called write yourself a scheme:
+The project was inspired by Graham Hutton's paper on monadic parser combinators in haskell and also by a book called write yourself a scheme:
+ - https://www.cs.nott.ac.uk/~pszgmh/monparsing.pdf:
  - https://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours
 
 
